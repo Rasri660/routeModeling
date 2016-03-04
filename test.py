@@ -34,25 +34,24 @@ except:
     print('I cant SELECT from database')
 
 locationList = cur.fetchall()
-print(vmidList)
-new_list = []
+
 for odPair in vmidList:
     for zone in locationList:
         if odPair[1] == zone[0]:
             x = geocoder.reverse_geocode(zone[1], zone[2])
         if odPair[2] == zone[0]:
             y = geocoder.reverse_geocode(zone[1], zone[2])
-    print(x.coordinates,y.coordinates)
-# directions = mapService.directions(
-#     x.coordinates,
-#     y.coordinates,
-#     'driving',
-#     None,
-#     True)
 
-# print('start:', test1.coordinates, ' end: ', test2.coordinates)
-# for routeIndex, route in enumerate(directions):
-#     print('Route: ', routeIndex + 1)
-#
-#     for step in route['legs'][0]['steps']:
-#         print(step['start_location'], step['distance'], step['duration'])
+    directions = mapService.directions(
+    x.coordinates,
+    y.coordinates,
+    'driving',
+    None,
+    True)
+
+print('start:', test1.coordinates, ' end: ', test2.coordinates)
+for routeIndex, route in enumerate(directions):
+    print('Route: ', routeIndex + 1)
+
+    for step in route['legs'][0]['steps']:
+        print(step['start_location'], step['distance'], step['duration'])
