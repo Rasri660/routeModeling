@@ -1,26 +1,58 @@
 
 from googlemaps import Client
 from pygeocoder import Geocoder
-import json
+import psycopg2
 
+#Connect to DB
+try:
+    conn = psycopg2.connect("dbname='mode' user='mms' host='localhost' password='001'")
+except:
+    print ("I am unable to connect to the database")
+
+cur = conn.cursor()
+
+#Initiate Google Maps services using "private" Token and Geocoder
 mapService = Client('AIzaSyCy-F7kcigXdHaaAIFSH8DlfKe1Dl-aJOM')
 geocoder = Geocoder()
 
-lnglat_start = geocoder.reverse_geocode(59.3831483, 18.0303761)
-lnglat_end = geocoder.reverse_geocode(59.3657481,18.0090901)
 
-test1 = geocoder.geocode('Hjortstigen 1, 170 71 Solna')
-test2 = geocoder.geocode('Terminalvägen 11, 171 73 Solna')
+#Execute SQL-Query to obtaind start and end points
+try:
+	cur.execute("""SELECT *
+                    FROM vm.vm_od_max
+                    WHERE vm_oid != vm_did""")
+except:
+    print('I cant SELECT from database')
 
-directions = mapService.directions(
-    test1.coordinates,
-    test2.coordinates,
-    'driving', None, True
-)
+vmidList = cur.fetchall()
 
-print('start:', test1.coordinates, ' end: ', test2.coordinates)
-for routeIndex, route in enumerate(directions):
-    print('Route: ', routeIndex + 1)
+try:
+	cur.execute("""SELECT vmid,ST_Y(ST_TRANSFORM(node_geom,4326)),ST_X(ST_TRANSFORM(node_geom,4326))
+                    FROM vm.vm_zones
+                    ORDER BY vmid """)
+except:
+    print('I cant SELECT from database')
 
-    for step in route['legs'][0]['steps']:
-        print(step['start_location'], step['distance'], step['duration'])
+locationList = cur.fetchall()
+print(vmidList)
+new_list = []
+for odPair in vmidList:
+    for zone in locationList:
+        if odPair[1] == zone[0]:
+            x = geocoder.reverse_geocode(zone[1], zone[2])
+        if odPair[2] == zone[0]:
+            y = geocoder.reverse_geocode(zone[1], zone[2])
+    print(x.coordinates,y.coordinates)
+# directions = mapService.directions(
+#     x.coordinates,
+#     y.coordinates,
+#     'driving',
+#     None,
+#     True)
+
+# print('start:', test1.coordinates, ' end: ', test2.coordinates)
+# for routeIndex, route in enumerate(directions):
+#     print('Route: ', routeIndex + 1)
+#
+#     for step in route['legs'][0]['steps']:
+#         print(step['start_location'], step['distance'], step['duration'])
