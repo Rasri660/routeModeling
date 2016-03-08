@@ -1,6 +1,5 @@
 
 from googlemaps import Client
-from pygeocoder import Geocoder
 import psycopg2
 
 #Connect to DB
@@ -13,7 +12,6 @@ cur = conn.cursor()
 
 #Initiate Google Maps services using "private" Token and Geocoder
 mapService = Client('AIzaSyCy-F7kcigXdHaaAIFSH8DlfKe1Dl-aJOM')
-geocoder = Geocoder()
 
 
 #Execute SQL-Query to obtaind start and end points
@@ -34,24 +32,39 @@ except:
     print('I cant SELECT from database')
 
 locationList = cur.fetchall()
-
+r =[]
+#Loop through locations and fetch routes between all OD-pairs
 for odPair in vmidList:
     for zone in locationList:
         if odPair[1] == zone[0]:
-            x = geocoder.reverse_geocode(zone[1], zone[2])
+            start = zone[0]
+            x = [zone[1], zone[2]]
         if odPair[2] == zone[0]:
-            y = geocoder.reverse_geocode(zone[1], zone[2])
+            end = zone[0]
+            y = [zone[1], zone[2]]
 
     directions = mapService.directions(
-    x.coordinates,
-    y.coordinates,
-    'driving',
-    None,
-    True)
+        x,
+        y,
+        'driving',
+        None,
+        True)
 
-print('start:', test1.coordinates, ' end: ', test2.coordinates)
-for routeIndex, route in enumerate(directions):
-    print('Route: ', routeIndex + 1)
-
-    for step in route['legs'][0]['steps']:
-        print(step['start_location'], step['distance'], step['duration'])
+    #Print all routes
+    print('start:', start, ' end: ', end)
+    for routeIndex, route in enumerate(directions):
+        #print('Route: ', routeIndex + 1)
+        for stepIndex, step in enumerate(route['legs'][0]['steps']):
+            #print(step['start_location'], step['distance']['value'], step['duration']['value'])
+            #print(step['start_location'])
+            data = {'oid': start,
+                    'did': end,
+                    'start': x,
+                    'end': y,
+                    'routeIndex': routeIndex + 1,
+                    'step': stepIndex,
+                    'dist': step['distance']['value'],
+                    'tt': step['duration']['value']}
+        r.append(data)
+#Add code to push routes to DB
+print(r)
