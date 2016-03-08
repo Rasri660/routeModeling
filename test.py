@@ -1,6 +1,6 @@
 
 from googlemaps import Client
-import psycopg2
+import psycopg2 #run export DYLD_FALLBACK_LIBRARY_PATH=/Library/PostgreSQL/9.5/lib:$DYLD_FALLBACK_LIBRARY_PATH
 
 #Connect to DB
 try:
