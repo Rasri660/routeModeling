@@ -1,6 +1,7 @@
 
 from googlemaps import Client
 import psycopg2 #run export DYLD_FALLBACK_LIBRARY_PATH=/Library/PostgreSQL/9.5/lib:$DYLD_FALLBACK_LIBRARY_PATH
+from django.contrib.gis.geos import Point
 
 #Connect to DB
 try:
@@ -32,6 +33,7 @@ except:
     print('I cant SELECT from database')
 
 locationList = cur.fetchall()
+time = 7
 r =[]
 #Loop through locations and fetch routes between all OD-pairs
 for odPair in vmidList:
@@ -48,23 +50,47 @@ for odPair in vmidList:
         y,
         'driving',
         None,
-        True)
+        True,
+        None,
+        None,
+        None,
+        None)
 
-    #Print all routes
+    #Add Each step of each route of each OD-pair
     print('start:', start, ' end: ', end)
     for routeIndex, route in enumerate(directions):
-        #print('Route: ', routeIndex + 1)
         for stepIndex, step in enumerate(route['legs'][0]['steps']):
-            #print(step['start_location'], step['distance']['value'], step['duration']['value'])
-            #print(step['start_location'])
             data = {'oid': start,
                     'did': end,
-                    'start': x,
-                    'end': y,
-                    'routeIndex': routeIndex + 1,
-                    'step': stepIndex,
+                    'route_index': routeIndex + 1,
+                    'step_index': stepIndex + 1,
+                    'start_point': Point(x[0], x[1]).wkt,
+                    'end_point': Point(y[0], y[1]).wkt,
                     'dist': step['distance']['value'],
                     'tt': step['duration']['value']}
-        r.append(data)
+            r.append(data)
+
+#Print all Routes
+#for route in r:
+#    print(route)
+
+test3 = []
+test3.append(r[0])
+test3.append(r[0])
+#print(test3)
+
 #Add code to push routes to DB
-print(r)
+
+try:
+	cur.execute("""DELETE FROM vm.micke_test""")
+	conn.commit()
+except:
+    print('Could not delete from DB')
+
+
+try:
+	cur.executemany("""INSERT INTO vm.micke_test(oid,did,route_index,step_index,start_point,end_point,dist,tt)
+	VALUES (%(oid)s,%(did)s,%(route_index)s,%(step_index)s,%(start_point)s, %(end_point)s,%(dist)s,%(tt)s)""", r)
+	conn.commit()
+except:
+    print ("Can't write to database")
