@@ -1,6 +1,6 @@
 #odGeneraotr.py
 
-import psycopg2
+import psycopg2 #run export DYLD_FALLBACK_LIBRARY_PATH=/Library/PostgreSQL/9.5/lib:$DYLD_FALLBACK_LIBRARY_PATH
 
 try:
     conn = psycopg2.connect("dbname='mode' user='mms' host='localhost' password='001'")
@@ -10,7 +10,7 @@ except:
 cur = conn.cursor()
 
 try:
-	cur.execute("""SELECT vmid FROM vm.vm_zones ORDER BY vmid""")
+	cur.execute("""SELECT DISTINCT(vmid) FROM vm.vmid_samsid_key""")
 except:
     print('I cant SELECT from database')
 
@@ -28,9 +28,7 @@ while(i < nmbrRows):
         j = j + 1
     i = i + 1
 
-print(odPairs)
-
-#writeOdPairsToDatabase
+#write OdPairs To Database
 try:
 	cur.execute("""DELETE FROM vm.vm_od_max""")
 	conn.commit()
@@ -38,7 +36,9 @@ except:
     print ("Did not insert to database")
 
 try:
-	cur.executemany("""INSERT INTO vm.vm_od_max (od_id,vm_oid,vm_did) VALUES(%s,%s,%s)""", odPairs)
+	cur.executemany("""INSERT INTO vm.vm_od_max (od_id,vm_oid,vm_did,white_list) VALUES(%s,%s,%s,true)""", odPairs)
 	conn.commit()
 except:
     print ("Did not insert to database")
+
+print('Script complete')

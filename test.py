@@ -18,7 +18,7 @@ mapService = Client('AIzaSyCy-F7kcigXdHaaAIFSH8DlfKe1Dl-aJOM')
 #Execute SQL-Query to obtaind start and end points
 try:
 	cur.execute("""SELECT *
-                    FROM vm.vm_od_max
+                    FROM vm.vm_od_max_test
                     WHERE vm_oid != vm_did""")
 except:
     print('I cant SELECT from database')
@@ -64,8 +64,8 @@ for odPair in vmidList:
                     'did': end,
                     'route_index': routeIndex + 1,
                     'step_index': stepIndex + 1,
-                    'start_point': Point(x[0], x[1]).wkt,
-                    'end_point': Point(y[0], y[1]).wkt,
+                    'start_point': Point(step['start_location']['lng'], step['start_location']['lat']).wkt,
+                    'end_point': Point(step['end_location']['lng'], step['end_location']['lat']).wkt,
                     'dist': step['distance']['value'],
                     'tt': step['duration']['value']}
             r.append(data)
@@ -74,12 +74,8 @@ for odPair in vmidList:
 #for route in r:
 #    print(route)
 
-test3 = []
-test3.append(r[0])
-test3.append(r[0])
-#print(test3)
-
 #Add code to push routes to DB
+#
 
 try:
 	cur.execute("""DELETE FROM vm.micke_test""")
