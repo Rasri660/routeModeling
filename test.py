@@ -3,8 +3,7 @@ from googlemaps import Client
 import time
 import psycopg2 #run export DYLD_FALLBACK_LIBRARY_PATH=/Library/PostgreSQL/9.5/lib:$DYLD_FALLBACK_LIBRARY_PATH
 from django.contrib.gis.geos import Point
-#from django.contrib.gis.geos import MultiPoint
-from polyline.codec import PolylineCodec
+from datetime import datetime
 
 #Connect to DB
 try:
@@ -22,7 +21,7 @@ mapService = Client('AIzaSyCy-F7kcigXdHaaAIFSH8DlfKe1Dl-aJOM')
 try:
 	cur.execute("""SELECT od_id, vm_oid, vm_did
                     FROM vm.vm_od_max
-                    WHERE (vm_oid = 8 AND vm_did = 30) OR vm_oid = 8 AND vm_did = 41""")
+                    WHERE (vm_oid = 8)""")
 except:
     print('I cant SELECT from database')
 
@@ -40,8 +39,9 @@ except:
 locationList = cur.fetchall()
 
 time_period = 1
+test_time = datetime(2016,9,6,6,30,0)
 r =[]
-test = []
+
 
 #Loop through locations and fetch routes between all OD-pairs
 for odPair in vmidList:
@@ -55,6 +55,8 @@ for odPair in vmidList:
 
     # print(odPair[0])
     # print(x,y)
+
+
     directions = mapService.directions(
         x,
         y,
@@ -64,7 +66,8 @@ for odPair in vmidList:
         None,
         None,
         None,
-        None)
+        None,
+        test_time)
     #print(directions[0]['legs'][0]['steps'][0]['start_location'], directions[0]['legs'][0]['steps'][0]['end_location'])
     #Add Each step of each route of each OD-pair
     #print('start:', start, ' end: ', end)
@@ -78,32 +81,25 @@ for odPair in vmidList:
                     'step_index': stepIndex + 1,
                     'travel_time': step['duration']['value'],
                     'distance': step['distance']['value'],
-                    'time_period': time_period}
+                    'time_period': time_period,
+                    'time_stamp': test_time.strftime("%Y-%m-%d %H:%M:%S")}
 
             r.append(data)
-
-
-test = time.clock();
-print(test)
-
 #Print all Routes
-#for route in r:
+# for route in r:
 #   print(route)
 
 #Add code to push routes to DB
-#
+try:
+	cur.execute("""DELETE FROM vm.micke_test""")
+	conn.commit()
+except:
+    print('Could not delete from DB')
 
+try:
+	cur.executemany("""INSERT INTO vm.micke_test (od_id, route_id, start_point, end_point, route_index, step_index, travel_time, distance, time_period) VALUES (%(od_id)s, %(route_id)s, %(start_point)s, %(end_point)s, %(route_index)s, %(step_index)s, %(travel_time)s, %(distance)s, %(time_period)s)""", r)
+#,%(route_id)s,%(start_point)s,%(end_point)s,%(route_index)s, %(step_index)s,%(travel_time)s,%(distance)s),%(time_period)s)""", r)
 
-# try:
-# 	cur.execute("""DELETE FROM vm.micke_test""")
-# 	conn.commit()
-# except:
-#     print('Could not delete from DB')
-#
-#
-# try:
-# 	cur.executemany("""INSERT INTO vm.micke_test(oid,did,route_index,step_index,start_point,end_point,dist,tt)
-# 	VALUES (%(oid)s,%(did)s,%(route_index)s,%(step_index)s,%(start_point)s, %(end_point)s,%(dist)s,%(tt)s)""", r)
-# 	conn.commit()
-# except:
-#     print ("Can't write to database")
+	conn.commit()
+except:
+    print ("Can't write to database...")
