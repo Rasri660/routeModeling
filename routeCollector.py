@@ -1,16 +1,17 @@
 import dbUtil
 import googleRoutes
 
+
 #Connect to DB
-user = 'mms'
-password = '001'
-#user = input('User: ')
-#password = input('Password: ')
+user = input('User: ')
+password = input('Password: ')
+
 user = "'" + user + "'"
 password = "'" + password + "'"
 
-cur = dbUtil.dbConnect("'mode'", user, password)
+[cur, conn] = dbUtil.dbConnect("'mode'", user, password)
 
+print(cur, conn)
 #Fetch data from db
 time_periods = dbUtil.getTimePeriods(cur)
 node_list = dbUtil.getNodeList(cur)
@@ -21,4 +22,5 @@ time_period = 1
 
 routes = googleRoutes.getGoogleRoutes(od_list, node_list, time_period)
 
-print(routes)
+dbUtil.deleteRoutes(cur, conn)
+dbUtil.storeRoutes(cur, conn, routes)

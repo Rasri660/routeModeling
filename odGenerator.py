@@ -1,13 +1,18 @@
 #odGeneraotr.py
 
 import psycopg2 #run export DYLD_FALLBACK_LIBRARY_PATH=/Library/PostgreSQL/9.5/lib:$DYLD_FALLBACK_LIBRARY_PATH
+import dbUtil
 
-try:
-    conn = psycopg2.connect("dbname='mode' user='mms' host='localhost' password='001'")
-except:
-    print ("I am unable to connect to the database")
+#Connect to DB
+user = input('User: ')
+password = input('Password: ')
 
-cur = conn.cursor()
+user = "'" + user + "'"
+password = "'" + password + "'"
+
+[cur, conn] = dbUtil.dbConnect("'mode'", user, password)
+
+print(cur, conn)
 
 try:
 	cur.execute("""SELECT DISTINCT(vmid) FROM vm.vmid_samsid_key""")
