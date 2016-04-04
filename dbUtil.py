@@ -21,7 +21,11 @@ def getOdList( cur ):
         try:
             cur.execute("""SELECT od_id, vm_oid, vm_did
                             FROM vm.vm_od_max
-                            WHERE (vm_oid = 8 AND vm_did = 22)""")
+                            WHERE white_list = true""")
+                            #WHERE (vm_oid BETWEEN 20 AND 25) AND (vm_did BETWEEN 20 AND 25)""")
+                            #WHERE (vm_oid >= 8 AND vm_did >= 10)""")
+                            #WHERE (vm_oid BETWEEN 20 AND 30) AND (vm_did BETWEEN 9 AND 30)
+                            #WHERE white_list = true
         except:
             print('I cant SELECT from database')
 
@@ -71,7 +75,7 @@ def getTimePeriods(cur):
 def deleteRoutes(cur, conn):
     if cur != None:
         try:
-        	cur.execute("""DELETE FROM vm.vm_google_routes_raw""")
+        	cur.execute("""TRUNCATE vm.vm_google_routes_raw RESTART IDENTITY""")
         	conn.commit()
         except:
             print('Could not delete from DB')

@@ -1,16 +1,27 @@
 import time
+import sys
 from django.contrib.gis.geos import Point
 from googlemaps import Client
 from datetime import datetime
 
-mapService = Client('AIzaSyCy-F7kcigXdHaaAIFSH8DlfKe1Dl-aJOM')
+mapService = Client('AIzaSyBJph3bUbrbULE4Uulp7y3H_vDH6AaoUA0') #VALLE
+#mapService = Client('AIzaSyCy-F7kcigXdHaaAIFSH8DlfKe1Dl-aJOM') #MICKE
 
 #Loop through locations and fetch routes between all OD-pairs
 def getGoogleRoutes(vmidList, locationList, time_period):
 
-    test_time = datetime(2016,9,6,6,30,0)
+    test_time = datetime(2016,9,6,7,45,0)
     routes = []
+    print('Collecting routes between', len(vmidList), 'OD-paris')
+    start_time = time.time()
+    counter = 0
     for odPair in vmidList:
+
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= 1:
+            sys.stdout.write("\r%d%%" % ((counter/len(vmidList)*100)))
+            sys.stdout.flush()
+
         for zone in locationList:
             if odPair[1] == zone[0]:
                 #start = zone[0]
@@ -39,5 +50,7 @@ def getGoogleRoutes(vmidList, locationList, time_period):
                         }
 
                 routes.append(data)
-
+        counter = counter + 1
+    sys.stdout.write("\r%d%%" % ((100)))
+    sys.stdout.flush()
     return routes
