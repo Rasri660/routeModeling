@@ -8,9 +8,9 @@ mapService = Client('AIzaSyBJph3bUbrbULE4Uulp7y3H_vDH6AaoUA0') #VALLE
 #mapService = Client('AIzaSyCy-F7kcigXdHaaAIFSH8DlfKe1Dl-aJOM') #MICKE
 
 #Loop through locations and fetch routes between all OD-pairs
-def getGoogleRoutes(vmidList, locationList, time_period):
+def getGoogleRoutes(vmidList, locationList, time_period, time_periods):
 
-    test_time = datetime(2016,9,6,7,45,0)
+    test_time = datetime(2016,9,6,time_periods[1][1].hour, time_periods[1][1].minute, time_periods[1][1].second)
     routes = []
     print('Collecting routes between', len(vmidList), 'OD-paris')
     start_time = time.time()

@@ -1,4 +1,5 @@
-import psycopg2 #run export DYLD_FALLBACK_LIBRARY_PATH=/Library/PostgreSQL/9.5/lib:$DYLD_FALLBACK_LIBRARY_PATH
+import psycopg2
+
 
 
 #Initialise connection to DB
@@ -86,7 +87,83 @@ def deleteRoutes(cur, conn):
 def storeRoutes(cur, conn, r):
     if cur != None:
         try:
-        	cur.executemany("""INSERT INTO vm.vm_google_routes_raw (od_id, route_id, start_point, end_point, route_index, step_index, travel_time, distance, time_period, start_time, date_inserted) VALUES (%(od_id)s, %(route_id)s, %(start_point)s, %(end_point)s, %(route_index)s, %(step_index)s, %(travel_time)s, %(distance)s, %(time_period)s, %(start_time)s, %(date_inserted)s)""", r)
+        	cur.executemany("""INSERT INTO vm.vm_google_routes_raw_nk (od_id, route_id, start_point, end_point, route_index, step_index, travel_time, distance, time_period, start_time, date_inserted) VALUES (%(od_id)s, %(route_id)s, %(start_point)s, %(end_point)s, %(route_index)s, %(step_index)s, %(travel_time)s, %(distance)s, %(time_period)s, %(start_time)s, %(date_inserted)s)""", r)
+        	conn.commit()
+        except:
+            print ("Can't write to database...")
+    else:
+        print('Not db connection established, try running dbConnect() first')
+
+def getDistinctSteps(cur, conn):
+    distinct_routes = None
+    if cur != None:
+        try:
+            cur.execute("""SELECT DISTINCT start_point, end_point FROM vm.vm_google_routes_raw""")
+        except:
+            print('I cant SELECT from database')
+
+        distinct_routes = cur.fetchall()
+        return distinct_routes
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+
+def getClosestSource(cur, conn, start):
+    closest_source = None
+    if cur != None:
+        try:
+            cur.execute("SELECT * FROM(SELECT from_ref_nodeid, ST_DISTANCE(ST_STARTPOINT(vm.ref_link_parts_network.geom), ST_TRANSFORM(ST_GeomFromText(ST_AsEWKT( %s ), 4326), 3006)) FROM vm.ref_link_parts_network WHERE vm.ref_link_parts_network.functional_road_class <=6 ORDER BY st_distance ASC LIMIT 1) AS FIRST", [start])
+        except:
+            print('I cant SELECT from database')
+
+        closest_source = cur.fetchall()
+        return closest_source
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+def getClosestTarget(cur, conn, end):
+    closest_Target = None
+    if cur != None:
+        try:
+            cur.execute("SELECT * FROM(SELECT to_ref_nodeid, ST_DISTANCE(ST_ENDPOINT(vm.ref_link_parts_network.geom), ST_TRANSFORM(ST_GeomFromText(ST_AsEWKT( %s ), 4326), 3006)) FROM vm.ref_link_parts_network WHERE vm.ref_link_parts_network.functional_road_class <= 6 ORDER BY st_distance ASC LIMIT 1) AS FIRST", [end])
+        except:
+            print('I cant SELECT from database')
+        closest_Target = cur.fetchall()
+
+        return closest_Target
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+
+def getLinksInStep(cur, conn, start_node, end_node):
+
+    start_node = start_node[0][0]
+    end_node = end_node[0][0]
+
+    links = None
+    if cur != None:
+        try:
+            cur.execute("SELECT seq, id2 AS edge, cost FROM pgr_dijkstra('SELECT vm.ref_link_parts_network.ref_lid AS id, CAST(vm.ref_link_parts_network.from_ref_nodeid AS int) AS source,  CAST(vm.ref_link_parts_network.to_ref_nodeid AS int) AS target, vm.ref_link_parts_network.cost AS cost FROM vm.ref_link_parts_network WHERE vm.ref_link_parts_network.functional_road_class <= 6', %s, %s, false, false) ORDER BY seq ASC", [start_node, end_node])
+        except:
+            print('I cant SELECT from database')
+
+        links = cur.fetchall()
+        return links
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+def storeUniqueSteps(cur, conn, dataToStore):
+    if cur != None:
+        try:
+        	cur.executemany("""INSERT INTO vm.unique_steps (step_id, start_node, end_node, start_point, end_point) VALUES (%s, %s, %s, %s)""", dataToStore)
         	conn.commit()
         except:
             print ("Can't write to database...")
