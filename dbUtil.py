@@ -22,11 +22,11 @@ def getOdList( cur ):
         try:
             cur.execute("""SELECT od_id, vm_oid, vm_did
                             FROM vm.vm_od_max
-                            WHERE white_list = true""")
-                            #WHERE (vm_oid BETWEEN 20 AND 25) AND (vm_did BETWEEN 20 AND 25)""")
+                            WHERE (vm_oid BETWEEN 21 AND 22) AND (vm_did BETWEEN 21 AND 22)""")
                             #WHERE (vm_oid >= 8 AND vm_did >= 10)""")
                             #WHERE (vm_oid BETWEEN 20 AND 30) AND (vm_did BETWEEN 9 AND 30)
                             #WHERE white_list = true
+                            #WHERE white_list = true""")
         except:
             print('I cant SELECT from database')
 
@@ -83,7 +83,7 @@ def deleteRoutes(cur, conn):
     else:
         print('Not db connection established, try running dbConnect() first')
 
-#QUERY to delete previous routes
+#QUERY to store Routes
 def storeRoutes(cur, conn, r):
     if cur != None:
         try:
@@ -94,11 +94,12 @@ def storeRoutes(cur, conn, r):
     else:
         print('Not db connection established, try running dbConnect() first')
 
+#Extract all the Distinct steps that are created in the Raw Google data
 def getDistinctSteps(cur, conn):
     distinct_routes = None
     if cur != None:
         try:
-            cur.execute("""SELECT DISTINCT start_point, end_point FROM vm.vm_google_routes_raw""")
+            cur.execute("""SELECT DISTINCT start_point, end_point, ST_ASTEXT(start_point), ST_ASTEXT(end_point) FROM vm.vm_google_routes_raw""")
         except:
             print('I cant SELECT from database')
 
@@ -110,6 +111,7 @@ def getDistinctSteps(cur, conn):
         return None
 
 
+#Map waypoints to closest source node
 def getClosestSource(cur, conn, start):
     closest_source = None
     if cur != None:
@@ -125,6 +127,7 @@ def getClosestSource(cur, conn, start):
         print('No db connection established, try running dbConnect() first')
         return None
 
+#Map waypoints to closest target node
 def getClosestTarget(cur, conn, end):
     closest_Target = None
     if cur != None:
@@ -140,12 +143,47 @@ def getClosestTarget(cur, conn, end):
         print('No db connection established, try running dbConnect() first')
         return None
 
+#Store every
+def storeUniqueSteps(cur, conn, dataToStore):
 
+    if cur != None:
+        try:
+        	cur.executemany("""INSERT INTO vm.unique_steps (step_id, start_node, distance_from_start_node, end_node, distance_from_end_node, start_point, end_point) VALUES (%s, %s, %s, %s, %s, %s, %s)""", dataToStore)
+        	conn.commit()
+        except:
+            print ("Can't write to database...")
+    else:
+        print('Not db connection established, try running dbConnect() first')
+
+
+def deleteUniqueSteps(cur, conn):
+    if cur != None:
+        try:
+        	cur.execute("""TRUNCATE vm.unique_steps RESTART IDENTITY""")
+        	conn.commit()
+        except:
+            print('Could not delete from DB')
+    else:
+        print('Not db connection established, try running dbConnect() first')
+
+def getUniqueSteps(cur, conn):
+    steps = None
+    if cur != None:
+        try:
+            cur.execute("SELECT * FROM vm.unique_steps")
+        except:
+            print('I cant SELECT from database')
+
+        steps = cur.fetchall()
+        return steps
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+
+#Extract all the links every unique step consists of
 def getLinksInStep(cur, conn, start_node, end_node):
-
-    start_node = start_node[0][0]
-    end_node = end_node[0][0]
-
     links = None
     if cur != None:
         try:
@@ -160,10 +198,24 @@ def getLinksInStep(cur, conn, start_node, end_node):
         print('No db connection established, try running dbConnect() first')
         return None
 
-def storeUniqueSteps(cur, conn, dataToStore):
+#Delete all previously stored linksteps
+def deleteStepLinks(cur, conn):
     if cur != None:
         try:
-        	cur.executemany("""INSERT INTO vm.unique_steps (step_id, start_node, end_node, start_point, end_point) VALUES (%s, %s, %s, %s)""", dataToStore)
+        	cur.execute("""TRUNCATE vm.step_links RESTART IDENTITY""")
+        	conn.commit()
+        except:
+            print('Could not delete from DB')
+    else:
+        print('Not db connection established, try running dbConnect() first')
+
+#Store each Link in the unique steps
+def storeStepLinks(cur, conn, dataToStore):
+    #("""INSERT INTO vm.step_links (step_id, sequence_number, ref_lid_link) VALUES(%s,%s,%s)""", dataToStore)
+
+    if cur != None:
+        try:
+        	cur.executemany("""INSERT INTO vm.step_links (step_id, sequence_number, ref_lid_link) VALUES(%s,%s,%s)""", dataToStore)
         	conn.commit()
         except:
             print ("Can't write to database...")

@@ -4,8 +4,9 @@ from django.contrib.gis.geos import Point
 from googlemaps import Client
 from datetime import datetime
 
-mapService = Client('AIzaSyBJph3bUbrbULE4Uulp7y3H_vDH6AaoUA0') #VALLE
-#mapService = Client('AIzaSyCy-F7kcigXdHaaAIFSH8DlfKe1Dl-aJOM') #MICKE
+#Add your API-KEY
+mapService = Client('API-KEY') 
+
 
 #Loop through locations and fetch routes between all OD-pairs
 def getGoogleRoutes(vmidList, locationList, time_period, time_periods):
