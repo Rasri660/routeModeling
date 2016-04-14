@@ -221,3 +221,55 @@ def storeStepLinks(cur, conn, dataToStore):
             print ("Can't write to database...")
     else:
         print('Not db connection established, try running dbConnect() first')
+
+#Get unique routes created from the raw Google dataToStore
+def getGoogleRoutes(cur, conn):
+    routes = None
+    if cur != None:
+        try:
+            cur.execute("SELECT od_id, route_id, SUM(travel_time), SUM(distance) FROM vm.vm_google_routes_raw GROUP BY od_id, route_id")
+        except:
+            print('I cant SELECT from database')
+
+        routes = cur.fetchall()
+        return routes
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+def createRouteGeom(cur, conn, route):
+    geom = None
+    if cur != None:
+        try:
+            cur.execute("""SELECT route_id, ST_UNION(geom) AS geom
+                           FROM
+                           (
+                                SELECT vm.step_links.step_id AS step_id, vm.step_links.ref_lid_link, vm.step_links.sequence_number, vm.ref_link_parts_network.geom
+                                FROM vm.step_links
+                                INNER JOIN vm.ref_link_parts_network
+                                ON vm.step_links.ref_lid_link = vm.ref_link_parts_network.ref_lid
+                            ) AS FIRST
+                           INNER JOIN vm.route_step_links ON vm.route_step_links.step_id = FIRST.step_id
+                           WHERE route_id = %s
+                           GROUP BY route_id""", [route])
+        except:
+            print('I cant SELECT from database')
+
+        geom = cur.fetchall()
+        return geom
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+def insertRouteGeom(cur, conn, geom, route):
+
+        if cur != None:
+            try:
+                cur.execute("UPDATE vm.vm_routes SET geom = %s WHERE route_id = %s", [geom, route])
+                conn.commit()
+            except:
+                print('I cant SELECT from database')
+        else:
+            print('No db connection established, try running dbConnect() first')
+            return None
