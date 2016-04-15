@@ -1,6 +1,7 @@
 import time
 import dbUtil
 import googleRoutes
+from datetime import datetime
 
 #Connect to DB
 #user = input('User: ')
@@ -32,12 +33,11 @@ print('OD relations collected in: ', elapsed_time, 'ms')
 start_time = time.time()
 
 #Start collecting routes from Google
-time_period = 6
+time_period = 2
 print('Route extraction initialised')
 routes = googleRoutes.getGoogleRoutes(od_list, node_list, time_period, time_periods)
-print(routes)
 print(' ')
-print('Route extraction complete!')
-
-#dbUtil.deleteRoutes(cur, conn)
-#dbUtil.storeRoutes(cur, conn, routes)
+print('Route extraction complete, inserting into DB')
+#######################################dbUtil.deleteRoutes(cur, conn)
+dbUtil.storeRoutes(cur, conn, routes)
+print('Process complete!')

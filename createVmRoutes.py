@@ -23,7 +23,6 @@ for index, route in enumerate(routes):
     if index > 100:
         break
 
-
     elapsed_time = time.time() - start_time
     if elapsed_time >= 1:
         sys.stdout.write("\r%d%%" % ((index/len(routes)*100)))

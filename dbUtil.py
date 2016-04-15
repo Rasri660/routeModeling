@@ -22,11 +22,12 @@ def getOdList( cur ):
         try:
             cur.execute("""SELECT od_id, vm_oid, vm_did
                             FROM vm.vm_od_max
-                            WHERE (vm_oid BETWEEN 21 AND 22) AND (vm_did BETWEEN 21 AND 22)""")
+                            WHERE white_list = true""")
+                            #WHERE (vm_oid BETWEEN 21 AND 22) AND (vm_did BETWEEN 21 AND 22)""")
                             #WHERE (vm_oid >= 8 AND vm_did >= 10)""")
                             #WHERE (vm_oid BETWEEN 20 AND 30) AND (vm_did BETWEEN 9 AND 30)
                             #WHERE white_list = true
-                            #WHERE white_list = true""")
+
         except:
             print('I cant SELECT from database')
 
@@ -87,7 +88,7 @@ def deleteRoutes(cur, conn):
 def storeRoutes(cur, conn, r):
     if cur != None:
         try:
-        	cur.executemany("""INSERT INTO vm.vm_google_routes_raw_nk (od_id, route_id, start_point, end_point, route_index, step_index, travel_time, distance, time_period, start_time, date_inserted) VALUES (%(od_id)s, %(route_id)s, %(start_point)s, %(end_point)s, %(route_index)s, %(step_index)s, %(travel_time)s, %(distance)s, %(time_period)s, %(start_time)s, %(date_inserted)s)""", r)
+        	cur.executemany("""INSERT INTO vm.vm_google_routes_raw (od_id, route_id, start_point, end_point, route_index, step_index, travel_time, distance, time_period, start_time, date_inserted) VALUES (%(od_id)s, %(route_id)s, %(start_point)s, %(end_point)s, %(route_index)s, %(step_index)s, %(travel_time)s, %(distance)s, %(time_period)s, %(start_time)s, %(date_inserted)s)""", r)
         	conn.commit()
         except:
             print ("Can't write to database...")
