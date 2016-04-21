@@ -15,8 +15,6 @@ password = "'" + password + "'"
 
 [cur, conn] = dbUtil.dbConnect("'mode'", user, password)
 
-print('\n')
-
 #Fetch data from db
 start_time = time.time()
 
@@ -30,17 +28,17 @@ elapsed_time = time.time() - start_time
 print('Nodes collected in: ', elapsed_time, 'ms')
 start_time = time.time()
 
-od_list = dbUtil.getOdList(cur)
+od_list = dbUtil.getOdListTEST(cur)
 elapsed_time = time.time() - start_time
 print('OD relations collected in: ', elapsed_time, 'ms')
 start_time = time.time()
 
-#Start collecting routes from Google
 time_period = 12
 print('Route extraction initialised')
 routes = googleRoutes.getGoogleRoutes(od_list, node_list, time_period, time_periods)
 print(' ')
 print('Route extraction complete, inserting into DB')
-#######################################dbUtil.deleteRoutes(cur, conn)
+
 dbUtil.storeRoutes(cur, conn, routes)
+
 print('Process complete!')

@@ -38,6 +38,24 @@ def getOdList( cur ):
         print('No db connection established, try running dbConnect() first')
         return None
 
+def getOdListTEST( cur ):
+    vmidList = None
+    if cur != None:
+        try:
+            cur.execute("""SELECT od_id, vm_oid, vm_did
+                            FROM vm.vm_od_max
+                            WHERE (vm_oid = 4 OR vm_did = 4) AND white_list = true""")
+
+        except:
+            print('I cant SELECT from database')
+
+        vmid_list = cur.fetchall()
+        return vmid_list
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
 #Query to get start and end points for all vm_zones
 def getNodeList(cur):
     node_list = None
@@ -100,7 +118,7 @@ def getDistinctSteps(cur, conn):
     distinct_routes = None
     if cur != None:
         try:
-            cur.execute("""SELECT DISTINCT start_point, end_point, ST_ASTEXT(start_point), ST_ASTEXT(end_point) FROM vm.vm_google_routes_raw""")
+            cur.execute("""SELECT DISTINCT start_point, end_point FROM vm.vm_google_routes_raw""")
         except:
             print('I cant SELECT from database')
 
@@ -149,7 +167,7 @@ def storeUniqueSteps(cur, conn, dataToStore):
 
     if cur != None:
         try:
-        	cur.executemany("""INSERT INTO vm.unique_steps (step_id, start_node, distance_from_start_node, end_node, distance_from_end_node, start_point, end_point) VALUES (%s, %s, %s, %s, %s, %s, %s)""", dataToStore)
+        	cur.executemany("""INSERT INTO vm.unique_steps (step_id, start_node, distance_start_node_to_point, end_node, distance_end_node_to_point, start_point, end_point)  VALUES (%s, %s, %s, %s, %s, %s, %s)""", dataToStore)
         	conn.commit()
         except:
             print ("Can't write to database...")
@@ -223,21 +241,42 @@ def storeStepLinks(cur, conn, dataToStore):
     else:
         print('Not db connection established, try running dbConnect() first')
 
-#Get unique routes created from the raw Google dataToStore
-def getGoogleRoutes(cur, conn):
-    routes = None
+
+def createRouteStepLinks(cur, conn):
+
     if cur != None:
         try:
-            cur.execute("SELECT od_id, route_id, SUM(travel_time), SUM(distance) FROM vm.vm_google_routes_raw GROUP BY od_id, route_id")
+            cur.execute("""INSERT INTO vm.route_step_links (route_id, step_index, step_id)
+                            SELECT route_id, step_index, step_id
+                            FROM vm.vm_google_routes_raw
+                            INNER JOIN vm.unique_steps
+                            ON vm.vm_google_routes_raw.start_point = vm.unique_steps.start_point AND vm.vm_google_routes_raw.end_point = vm.unique_steps.end_point""")
+            conn.commit()
         except:
             print('I cant SELECT from database')
-
-        routes = cur.fetchall()
-        return routes
 
     else:
         print('No db connection established, try running dbConnect() first')
         return None
+
+#Get unique routes created from the raw Google dataToStore
+def createVmRoutes(cur, conn):
+    routes = None
+    if cur != None:
+        try:
+            cur.execute("""INSERT INTO vm.vm_routes
+                            SELECT time_period, route_id, od_id, route_index, SUM(travel_time) AS travel_time, SUM(distance) AS distance
+                            FROM vm.vm_google_routes_raw
+                            GROUP BY od_id, route_id, time_period, route_index
+                            ORDER BY time_period, route_id""")
+            conn.commit()
+
+        except:
+            print('I cant SELECT from database')
+
+
+    else:
+        print('No db connection established, try running dbConnect() first')
 
 def createRouteGeom(cur, conn, route):
     geom = None
@@ -264,13 +303,65 @@ def createRouteGeom(cur, conn, route):
         return None
 
 def insertRouteGeom(cur, conn, geom, route):
-
         if cur != None:
             try:
                 cur.execute("UPDATE vm.vm_routes SET geom = %s WHERE route_id = %s", [geom, route])
                 conn.commit()
             except:
                 print('I cant SELECT from database')
+        else:
+            print('No db connection established, try running dbConnect() first')
+            return None
+
+
+##### Network Loading related Querys #####
+def getDistinctOdRoutes(cur, conn, time_period):
+    if cur != None:
+        try:
+            cur.execute("""SELECT DISTINCT od_id
+                            FROM vm.vm_routes
+                            WHERE time_period = %s""", [time_period])
+        except:
+            print('I cant SELECT from database')
+        routes = cur.fetchall()
+        return routes
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+def getOdRoutes(cur, conn, route, time_period):
+
+    if cur != None:
+        try:
+            cur.execute("""SELECT *
+                            FROM vm.vm_routes
+                            WHERE od_id = %s AND time_period = %s""", [route, time_period])
+        except:
+            print('I cant SELECT from database')
+        routes = cur.fetchall()
+        return routes
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+
+#TEST THIS AT ANOTHER TIME
+def createEqualShares(cur, conn):
+        if cur != None:
+            try:
+                cur.execute("""INSERT INTO vm.route_shares
+                                WITH test AS (SELECT od_id, time_period, MAX(route_index) AS nr_of_routes
+                                FROM vm.vm_routes
+                                GROUP BY od_id, time_period
+                                ORDER BY od_id, time_period ASC)
+                                SELECT route_id, 1/CAST(nr_of_routes AS double precision) AS share
+                                FROM test
+                                INNER JOIN vm.vm_routes
+                                ON test.od_id = vm.vm_routes.od_id AND test.time_period = vm.vm_routes.time_period """)
+                conn.commit()
+            except:
+                print('I cant SELECT from database')
+
         else:
             print('No db connection established, try running dbConnect() first')
             return None

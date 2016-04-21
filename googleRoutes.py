@@ -5,8 +5,7 @@ from googlemaps import Client
 from datetime import datetime
 
 #Add your API-KEY
-mapService = Client('API-KEY') 
-
+mapService = Client('API-KEY')
 
 #Loop through locations and fetch routes between all OD-pairs
 def getGoogleRoutes(vmidList, locationList, time_period, time_periods):

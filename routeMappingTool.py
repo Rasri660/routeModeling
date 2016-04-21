@@ -5,6 +5,7 @@ import sys
 
 #os.system('export DYLD_FALLBACK_LIBRARY_PATH=/Library/PostgreSQL/9.5/lib:$DYLD_FALLBACK_LIBRARY_PATH')
 
+
 user = "'" + user + "'"
 password = "'" + password + "'"
 
@@ -19,9 +20,12 @@ linkList = []
 counter = 0
 
 start_time = time.time()
+
 print('Mapping: ', len(unique_steps), 'Unique routes')
 sys.stdout.write("\r%d%%" % ((counter/len(unique_steps)*100)))
 for index, step in enumerate(unique_steps):
+    if index > 3:
+        break
     elapsed_time = time.time() - start_time
 
     if elapsed_time >= 1:
@@ -41,4 +45,8 @@ for index, step in enumerate(unique_steps):
     counter = counter + 1
 
 #dbUtil.deleteStepLinks(cur,conn)
-dbUtil.storeStepLinks(cur, conn, linkList)
+#dbUtil.storeStepLinks(cur, conn, linkList)
+
+print('Creating route step links')
+dbUtil.createRouteStepLinks(cur, conn)
+print('Route Mapping complete')
