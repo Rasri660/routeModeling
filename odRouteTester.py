@@ -7,8 +7,6 @@ from datetime import datetime
 #user = input('User: ')
 #password = input('Password: ')
 
-user = 'vm-user'
-password = '001'
 
 user = "'" + user + "'"
 password = "'" + password + "'"

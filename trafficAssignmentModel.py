@@ -27,8 +27,6 @@ def calculateRouteShares(utilities):
         exp.append(math.exp(i))
         den = den + math.exp(i)
 
-
-
     for e in exp:
          shares.append(e/den)
 

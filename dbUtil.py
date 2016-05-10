@@ -4,7 +4,6 @@ import psycopg2
 
 #Initialise connection to DB
 def dbConnect(name, usr, pas):
-
     try:
         conn = psycopg2.connect("dbname=" + name + "user=" + usr + "host='localhost' password=" + pas + "")
         print('Connection to db established')
@@ -44,7 +43,7 @@ def getOdListTEST( cur ):
         try:
             cur.execute("""SELECT od_id, vm_oid, vm_did
                             FROM vm.vm_od_max
-                            WHERE (vm_oid = 4 OR vm_did = 4) AND white_list = true""")
+                            WHERE (vm_oid = 4 AND vm_did = 8) AND white_list = true""")
 
         except:
             print('I cant SELECT from database')
@@ -106,7 +105,8 @@ def deleteRoutes(cur, conn):
 def storeRoutes(cur, conn, r):
     if cur != None:
         try:
-        	cur.executemany("""INSERT INTO vm.vm_google_routes_raw (od_id, route_id, start_point, end_point, route_index, step_index, travel_time, distance, time_period, start_time, date_inserted) VALUES (%(od_id)s, %(route_id)s, %(start_point)s, %(end_point)s, %(route_index)s, %(step_index)s, %(travel_time)s, %(distance)s, %(time_period)s, %(start_time)s, %(date_inserted)s)""", r)
+        	cur.executemany("""INSERT INTO vm.vm_google_routes_raw (od_id, route_id, start_point, end_point, route_index, step_index, travel_time, distance, time_period, start_time, date_inserted)
+            VALUES (%(od_id)s, %(route_id)s, %(start_point)s, %(end_point)s, %(route_index)s, %(step_index)s, %(travel_time)s, %(distance)s, %(time_period)s, %(start_time)s, %(date_inserted)s)""", r)
         	conn.commit()
         except:
             print ("Can't write to database...")
@@ -129,13 +129,34 @@ def getDistinctSteps(cur, conn):
         print('No db connection established, try running dbConnect() first')
         return None
 
+#Extract all the Distinct steps that are created in the Raw Google data
+def getDistinctStepsCoordinates(cur, conn):
+    distinct_routes = None
+    if cur != None:
+        try:
+            cur.execute("""SELECT step_id, ST_X(start_point), ST_Y(start_point), ST_X(end_point), ST_Y(end_point)
+                            FROM vm.unique_steps_new""")
+        except:
+            print('I cant SELECT from database')
+
+        distinct_routes = cur.fetchall()
+        return distinct_routes
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
 
 #Map waypoints to closest source node
 def getClosestSource(cur, conn, start):
     closest_source = None
     if cur != None:
         try:
-            cur.execute("SELECT * FROM(SELECT from_ref_nodeid, ST_DISTANCE(ST_STARTPOINT(vm.ref_link_parts_network.geom), ST_TRANSFORM(ST_GeomFromText(ST_AsEWKT( %s ), 4326), 3006)) FROM vm.ref_link_parts_network WHERE vm.ref_link_parts_network.functional_road_class <=6 ORDER BY st_distance ASC LIMIT 1) AS FIRST", [start])
+            cur.execute("""SELECT from_ref_nodeid, to_ref_nodeid, ST_DISTANCE(vm.ref_link_parts_network.geom, ST_TRANSFORM(ST_GeomFromText(ST_AsEWKT( %s ), 4326), 3006)), ref_lid
+                            FROM vm.ref_link_parts_network
+                            WHERE vm.ref_link_parts_network.functional_road_class <= 7
+                            ORDER BY st_distance ASC
+                            LIMIT 1""", [start])
         except:
             print('I cant SELECT from database')
 
@@ -151,11 +172,15 @@ def getClosestTarget(cur, conn, end):
     closest_Target = None
     if cur != None:
         try:
-            cur.execute("SELECT * FROM(SELECT to_ref_nodeid, ST_DISTANCE(ST_ENDPOINT(vm.ref_link_parts_network.geom), ST_TRANSFORM(ST_GeomFromText(ST_AsEWKT( %s ), 4326), 3006)) FROM vm.ref_link_parts_network WHERE vm.ref_link_parts_network.functional_road_class <= 6 ORDER BY st_distance ASC LIMIT 1) AS FIRST", [end])
+            cur.execute("""SELECT from_ref_nodeid, to_ref_nodeid, ST_DISTANCE(vm.ref_link_parts_network.geom, ST_TRANSFORM(ST_GeomFromText(ST_AsEWKT( %s ), 4326), 3006)), ref_lid
+                            FROM vm.ref_link_parts_network
+                            WHERE vm.ref_link_parts_network.functional_road_class <= 7
+                            ORDER BY st_distance ASC
+                            LIMIT 1""", [end])
         except:
             print('I cant SELECT from database')
-        closest_Target = cur.fetchall()
 
+        closest_Target = cur.fetchall()
         return closest_Target
 
     else:
@@ -167,12 +192,26 @@ def storeUniqueSteps(cur, conn, dataToStore):
 
     if cur != None:
         try:
-        	cur.executemany("""INSERT INTO vm.unique_steps (step_id, start_node, distance_start_node_to_point, end_node, distance_end_node_to_point, start_point, end_point)  VALUES (%s, %s, %s, %s, %s, %s, %s)""", dataToStore)
+        	cur.executemany("""INSERT INTO vm.unique_steps (step_id, start_node, distance_start_node_to_point, end_node, distance_end_node_to_point, start_point, end_point)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)""", dataToStore)
         	conn.commit()
         except:
             print ("Can't write to database...")
     else:
         print('Not db connection established, try running dbConnect() first')
+
+def storeUniqueStepsTest(cur, conn, dataToStore):
+
+    if cur != None:
+        try:
+        	cur.executemany("""INSERT INTO vm.unique_steps_test (step_id, start_ref_lid_link, start_node, distance_start_to_link , end_ref_lid_link, end_node, distance_end_to_link, start_point, end_point)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", dataToStore)
+        	conn.commit()
+        except:
+            print ("Can't write to database...")
+    else:
+        print('Not db connection established, try running dbConnect() first')
+
 
 
 def deleteUniqueSteps(cur, conn):
@@ -189,7 +228,7 @@ def getUniqueSteps(cur, conn):
     steps = None
     if cur != None:
         try:
-            cur.execute("SELECT * FROM vm.unique_steps")
+            cur.execute("SELECT * FROM vm.unique_steps_test")
         except:
             print('I cant SELECT from database')
 
@@ -200,15 +239,44 @@ def getUniqueSteps(cur, conn):
         print('No db connection established, try running dbConnect() first')
         return None
 
+def getUniqueStepsMod(cur, conn):
+    steps = None
+    if cur != None:
+        try:
+            cur.execute("SELECT * FROM vm.unique_steps_nodes")
+        except:
+            print('I cant SELECT from database')
+
+        steps = cur.fetchall()
+        return steps
+
+    else:
+        print('No db connection established, try running dbConnect() first')
+        return None
+
+def storeUniqueStepsPolly(cur, conn, dataToStore):
+    if cur != None:
+        try:
+        	cur.executemany("""INSERT INTO vm.unique_steps_poly (step_id, sequence_number, geom)
+                                VALUES (%s, %s, %s)""", dataToStore)
+        	conn.commit()
+        except:
+            print ("Can't write to database...")
+    else:
+        print('Not db connection established, try running dbConnect() first')
+
 
 #Extract all the links every unique step consists of
 def getLinksInStep(cur, conn, start_node, end_node):
+    #print(start_node, end_node)
     links = None
     if cur != None:
         try:
-            cur.execute("SELECT seq, id2 AS edge, cost FROM pgr_dijkstra('SELECT vm.ref_link_parts_network.ref_lid AS id, CAST(vm.ref_link_parts_network.from_ref_nodeid AS int) AS source,  CAST(vm.ref_link_parts_network.to_ref_nodeid AS int) AS target, vm.ref_link_parts_network.cost AS cost FROM vm.ref_link_parts_network WHERE vm.ref_link_parts_network.functional_road_class <= 6', %s, %s, false, false) ORDER BY seq ASC", [start_node, end_node])
+            cur.execute("""SELECT seq, id2 AS edge, cost
+            FROM pgr_dijkstra('SELECT vm.ref_link_parts_network.ref_lid AS id, CAST(vm.ref_link_parts_network.from_ref_nodeid AS int) AS source,  CAST(vm.ref_link_parts_network.to_ref_nodeid AS int) AS target, vm.ref_link_parts_network.cost AS cost, vm.ref_link_parts_network.reverse_cost AS reverse_cost FROM vm.ref_link_parts_network WHERE vm.ref_link_parts_network.functional_road_class <= 7', %s, %s, true, true) ORDER BY seq ASC""", [start_node, end_node])
         except:
-            print('I cant SELECT from database')
+            conn.rollback()
+            return [(-1, -1)]
 
         links = cur.fetchall()
         return links
@@ -231,7 +299,6 @@ def deleteStepLinks(cur, conn):
 #Store each Link in the unique steps
 def storeStepLinks(cur, conn, dataToStore):
     #("""INSERT INTO vm.step_links (step_id, sequence_number, ref_lid_link) VALUES(%s,%s,%s)""", dataToStore)
-
     if cur != None:
         try:
         	cur.executemany("""INSERT INTO vm.step_links (step_id, sequence_number, ref_lid_link) VALUES(%s,%s,%s)""", dataToStore)

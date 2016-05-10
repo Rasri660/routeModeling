@@ -7,8 +7,6 @@ from datetime import datetime
 #user = input('User: ')
 #password = input('Password: ')
 
-user = 'vm-user'
-password = '001'
 
 user = "'" + user + "'"
 password = "'" + password + "'"
@@ -30,7 +28,7 @@ elapsed_time = time.time() - start_time
 print('Nodes collected in: ', elapsed_time, 'ms')
 start_time = time.time()
 
-od_list = dbUtil.getOdList(cur)
+od_list = dbUtil.getOdListTEST(cur)
 elapsed_time = time.time() - start_time
 print('OD relations collected in: ', elapsed_time, 'ms')
 start_time = time.time()
@@ -42,5 +40,5 @@ routes = googleRoutes.getGoogleRoutes(od_list, node_list, time_period, time_peri
 print(' ')
 print('Route extraction complete, inserting into DB')
 #######################################dbUtil.deleteRoutes(cur, conn)
-dbUtil.storeRoutes(cur, conn, routes)
+#dbUtil.storeRoutes(cur, conn, routes)
 print('Process complete!')

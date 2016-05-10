@@ -11,10 +11,8 @@ password = "'" + password + "'"
 
 [cur, conn] = dbUtil.dbConnect("'mode'", user, password)
 
-unique_steps = dbUtil.getUniqueSteps(cur, conn)
+unique_steps = dbUtil.getUniqueStepsMod(cur, conn)
 
-start = unique_steps[0][1]
-end = unique_steps[0][3]
 
 linkList = []
 counter = 0
@@ -24,8 +22,7 @@ start_time = time.time()
 print('Mapping: ', len(unique_steps), 'Unique routes')
 sys.stdout.write("\r%d%%" % ((counter/len(unique_steps)*100)))
 for index, step in enumerate(unique_steps):
-    if index > 3:
-        break
+
     elapsed_time = time.time() - start_time
 
     if elapsed_time >= 1:
@@ -34,9 +31,13 @@ for index, step in enumerate(unique_steps):
 
     step_id = step[0]
     start_node = step[1]
-    end_node = step[3]
+    end_node = step[2]
 
-    links = dbUtil.getLinksInStep(cur, conn, start_node, end_node)
+    if start_node != -1 and end_node != -1:
+        links = dbUtil.getLinksInStep(cur, conn, start_node, end_node)
+    else:
+        links = [(-1, -1)]
+
 
     for link in links:
         if(link[1] != -1):
@@ -45,8 +46,8 @@ for index, step in enumerate(unique_steps):
     counter = counter + 1
 
 #dbUtil.deleteStepLinks(cur,conn)
-#dbUtil.storeStepLinks(cur, conn, linkList)
+dbUtil.storeStepLinks(cur, conn, linkList)
 
 print('Creating route step links')
-dbUtil.createRouteStepLinks(cur, conn)
+#dbUtil.createRouteStepLinks(cur, conn)
 print('Route Mapping complete')

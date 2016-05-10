@@ -5,7 +5,9 @@ from googlemaps import Client
 from datetime import datetime
 
 #Add your API-KEY
-mapService = Client('API-KEY')
+#mapService = Client('API-KEY')
+
+
 
 #Loop through locations and fetch routes between all OD-pairs
 def getGoogleRoutes(vmidList, locationList, time_period, time_periods):
@@ -54,3 +56,9 @@ def getGoogleRoutes(vmidList, locationList, time_period, time_periods):
     sys.stdout.write("\r%d%%" % ((100)))
     sys.stdout.flush()
     return routes
+
+def getGooglePolyline(x,y):
+    #test_time = datetime(2016,9,6,time_periods[1][1].hour, time_periods[1][1].minute, time_periods[1][1].second)
+    directions = mapService.directions(x, y, 'driving', None, True)
+    polyline = directions[0]['overview_polyline']['points']
+    return polyline

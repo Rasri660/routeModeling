@@ -3,14 +3,11 @@ import dbUtil
 import sys
 import trafficAssignmentModel as TAM
 
-user = 'vm-user'
-password = '001'
 
 user = "'" + user + "'"
 password = "'" + password + "'"
 
 [cur, conn] = dbUtil.dbConnect("'mode'", user, password)
-
 time_periods = dbUtil.getTimePeriods(cur)
 
 

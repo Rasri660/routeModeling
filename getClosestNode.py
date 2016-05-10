@@ -5,7 +5,6 @@ import sys
 
 #os.system('export DYLD_FALLBACK_LIBRARY_PATH=/Library/PostgreSQL/9.5/lib:$DYLD_FALLBACK_LIBRARY_PATH')
 
-
 user = "'" + user + "'"
 password = "'" + password + "'"
 
@@ -26,10 +25,19 @@ for index, route in enumerate(distinct_routes):
 
     start = route[0]
     end = route[1]
+    start_info = dbUtil.getClosestSource(cur, conn, start)
+    end_info = dbUtil.getClosestTarget(cur, conn, end)
 
-    start_node = dbUtil.getClosestSource(cur, conn, start)
-    end_node = dbUtil.getClosestSource(cur, conn, end)
-    lines.append((index, start_node[0][0], start_node[0][1], end_node[0][0], end_node[0][1], start, end))
+    start_node = start_info[0][0]
+    end_node = end_info[0][0]
+    start_dist = start_info[0][2]
+    end_dist = end_info[0][2]
+    start_link = start_info[0][3]
+    end_link = end_info[0][3]
+
+    if(start_dist < 1000 and end_dist < 1000):
+        lines.append((index, start_link, start_node, start_dist, end_link, end_node, end_dist, start, end))
+
     counter = counter + 1
 
-dbUtil.storeUniqueSteps(cur, conn, lines)
+dbUtil.storeUniqueStepsTest(cur, conn, lines)
