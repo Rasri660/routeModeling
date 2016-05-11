@@ -35,7 +35,7 @@ def getUniqueRoutes(cur, conn):
 
 
 def getRouteStepLinks(cur, conn, route_id):
-    print(route_id)
+    #print(route_id)
     if cur != None:
         try:
             cur.execute("""WITH test AS (SELECT *
@@ -45,7 +45,7 @@ def getRouteStepLinks(cur, conn, route_id):
                                         		FROM vm.route_step_links
                                         		INNER JOIN vm.step_links
                                         		ON step_links.step_id = route_step_links.step_id
-                                        		WHERE route_id = '1077:1:1'
+                                        		WHERE route_id = %s
                                         		ORDER BY step_index, sequence_number
                                         	) AS q1
                                         )
@@ -84,7 +84,7 @@ def getRouteStepLinks(cur, conn, route_id):
 
                                         INNER JOIN vm.ref_link_parts_network
                                         ON end_link = ref_link_parts_network.ref_lid
-                                        ORDER BY step_index DESC""")
+                                        ORDER BY step_index DESC""", [route_id])
         except:
             print('I cant SELECT from database')
 
