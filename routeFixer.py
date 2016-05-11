@@ -2,8 +2,7 @@ import dbUtil_routeFixer
 import time
 import sys
 
-user = 'vm-user'
-password = '001'
+
 
 user = "'" + user + "'"
 password = "'" + password + "'"
